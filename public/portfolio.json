@@ -1,7 +1,7 @@
 {
   "hero": {
     "name": "AZIZ REZA PRINCE",
-    "title": "UI/UX & Android Dev",
+    "title": "Android & Front-End Developer",
     "tagline1Prefix": "Passionate about",
     "tagline1Highlight": "technology.",
     "tagline2Prefix": "Exploring code",
@@ -57,45 +57,31 @@
   "experience": [
     {
       "id": "exp-1",
-      "role": "Campus Co-ordinator",
-      "organization": "Youth Upskill Network - YUNet",
-      "year": "2025 - Present",
-      "description": "Working with the development team and representing YUNet as a campus ambassador in PSTU.\nManaging events with the organizer team."
+      "role": "Co-Founder",
+      "organization": "PSTU ESPORTS CLUB",
+      "year": "Jun 2025 - Present",
+      "description": "• Co-established the university’s official esports club, defining its core mission, governance structure, and growth roadmap.\n• Organized and executed campus-wide competitive gaming tournaments, managing logistics, rulebooks, and live operations.\n• Built and led an active gaming community, driving student engagement and recruiting core team members."
     },
     {
       "id": "exp-2",
-      "role": "Assistant General Secretary",
-      "organization": "CSE Club PSTU",
-      "year": "2025 - Present",
-      "description": "Assisted in planning and organizing cultural and sports events for CSE students.\nCoordinated logistics, registrations, and communications for events.\nHelped maintain documentation and reports of wing activities."
+      "role": "President",
+      "organization": "PSTU YOUTHMAPPERS",
+      "year": "Jan 2025 - Jan 2026",
+      "description": "• Led strategic initiatives to drive organizational growth and operational efficiency.\n• Oversaw cross-functional teams to ensure alignment with strategic goals and objectives.\n• Developed strong partnerships with cross-functional teams for improved collaboration and efficiency."
     },
     {
       "id": "exp-3",
-      "role": "Graphics Designer",
-      "organization": "PSTU Youthmappers",
-      "year": "2024 - 2025",
-      "description": "Designed posters, banners, and social media content for various events.\nCollaborated with the executive team to maintain brand consistency.\nCreated visual assets to promote club activities and workshops."
+      "role": "Vice President",
+      "organization": "CSE CLUB PSTU",
+      "year": "Jan 2026 - Present",
+      "description": "• Mentored junior leaders, promoting professional development and succession planning within the organization.\n• Led cross-functional teams to drive strategic initiatives aligned with corporate objectives.\n• Provided strong leadership to enhance team productivity and morale."
     },
     {
       "id": "exp-4",
-      "role": "Executive Member",
-      "organization": "PSTU PHOTOGRAPHY CLUB",
-      "year": "2024 - 2025",
-      "description": "Participated in organizing photography exhibitions and workshops.\nAssisted in mentoring new members and curating photo submissions.\nContributed to event coverage and visual storytelling projects."
-    },
-    {
-      "id": "exp-5",
-      "role": "Documentation Team Co-ordinator",
-      "organization": "PSTU Youthmappers",
-      "year": "2023-2024",
-      "description": "Led the documentation of mapping activities, events, and trainings.\nSupported visibility and outreach by promoting club activities.\nCreated blog posts, newsletters, and summary reports."
-    },
-    {
-      "id": "exp-6",
-      "role": "Content Creator",
-      "organization": "PSTU PHOTOGRAPHY CLUB",
-      "year": "2023 - 2024",
-      "description": "Created and managed visual and written content for social media and events.\nCollaborated with photographers to publish engaging content.\nHandled social media posts, captions, and visual storytelling."
+      "role": "Campus Co-ordinator",
+      "organization": "YOUTH UPSKILL NETWORK - YUNET",
+      "year": "2025 - Present",
+      "description": "Working with the development team and representing YUNet as a campus ambassador in PSTU.\nManaging events with the organizer team."
     }
   ],
   "projects": [

@@ -62,37 +62,37 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     const [isLoaded, setIsLoaded] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-    // Load data from LocalStorage and live portfolio.json on mount
-    useEffect(() => {
-        let hasLocalCustomData = false;
+        // First load from localStorage if available for immediate responsiveness
         try {
             const savedData = localStorage.getItem(DATA_STORAGE_KEY);
             if (savedData) {
                 const parsed = JSON.parse(savedData);
                 setData(parsed);
-                hasLocalCustomData = true;
             }
         } catch (e) {
             console.error("Failed to load portfolio data from localStorage", e);
         }
 
-        // If no local custom edits are present, fetch live portfolio.json to ensure fresh data from GitHub
-        if (!hasLocalCustomData) {
-            const basePath = getBasePath();
-            fetch(`${basePath}/portfolio.json?t=${Date.now()}`)
-                .then((res) => {
-                    if (res.ok) return res.json();
-                    throw new Error("Failed to fetch live portfolio.json");
-                })
-                .then((remoteData) => {
-                    if (remoteData && remoteData.hero) {
-                        setData(remoteData);
+        // Always fetch fresh live portfolio.json from GitHub/Server to ensure latest published updates show up
+        const basePath = getBasePath();
+        fetch(`${basePath}/portfolio.json?t=${Date.now()}`, { cache: "no-store" })
+            .then((res) => {
+                if (res.ok) return res.json();
+                throw new Error("Failed to fetch live portfolio.json");
+            })
+            .then((remoteData) => {
+                if (remoteData && remoteData.hero) {
+                    setData(remoteData);
+                    try {
+                        localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(remoteData));
+                    } catch {
+                        // ignore storage errors
                     }
-                })
-                .catch(() => {
-                    // Fallback to initial imported data
-                });
-        }
+                }
+            })
+            .catch(() => {
+                // Fallback to existing loaded data
+            });
 
         // Check authentication session
         try {
