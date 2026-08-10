@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePortfolioData } from "@/app/context/PortfolioContext";
@@ -10,6 +10,13 @@ import {
     ProjectItem,
     ContactItem,
 } from "@/app/data/portfolioData";
+import {
+    getStoredGitHubToken,
+    saveStoredGitHubToken,
+    getStoredGitHubRepo,
+    saveStoredGitHubRepo,
+    publishPortfolioToGitHub,
+} from "@/app/utils/githubSync";
 
 type TabType =
     | "hero"
@@ -69,6 +76,14 @@ export default function AdminPage() {
             setToastMessage(null);
         }, 3000);
     };
+
+    // GitHub Auto-Publish State
+    const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+    const [publishToken, setPublishToken] = useState("");
+    const [publishRepo, setPublishRepo] = useState("AzizRezaPrince/Personal_Portfolio");
+    const [publishStatus, setPublishStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+    const [publishMessage, setPublishMessage] = useState("");
+    const [actionsUrl, setActionsUrl] = useState("");
 
     // Hero local form state
     const [heroForm, setHeroForm] = useState(data.hero);
@@ -138,7 +153,7 @@ export default function AdminPage() {
     const importFileInputRef = useRef<HTMLInputElement>(null);
 
     // Sync local forms when data is loaded/updated
-    React.useEffect(() => {
+    useEffect(() => {
         if (isLoaded) {
             setHeroForm(data.hero);
             setBioParagraphs(data.about.bio);
@@ -150,8 +165,46 @@ export default function AdminPage() {
             setFooterCopyright(data.footer.copyright);
             const currentCreds = getCredentials();
             setNewAdminUser(currentCreds.username);
+            setPublishToken(getStoredGitHubToken());
+            setPublishRepo(getStoredGitHubRepo());
         }
     }, [data, isLoaded]);
+
+    const handlePublishToGitHub = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        if (!publishToken.trim()) {
+            setPublishStatus("error");
+            setPublishMessage("Please enter your GitHub Personal Access Token (PAT).");
+            return;
+        }
+
+        saveStoredGitHubToken(publishToken);
+        saveStoredGitHubRepo(publishRepo);
+
+        setPublishStatus("loading");
+        setPublishMessage("Connecting to GitHub and committing portfolio updates...");
+
+        try {
+            const res = await publishPortfolioToGitHub(
+                data,
+                publishToken,
+                publishRepo,
+                `Update portfolio via Admin Panel [${new Date().toLocaleTimeString()}]`
+            );
+
+            if (res.success) {
+                setPublishStatus("success");
+                setActionsUrl(res.htmlUrl || `https://github.com/${publishRepo}/actions`);
+                showToast("🚀 Successfully committed to GitHub! Live site is deploying...");
+            } else {
+                setPublishStatus("error");
+                setPublishMessage(res.error || "Failed to commit changes to GitHub repository.");
+            }
+        } catch (err: unknown) {
+            setPublishStatus("error");
+            setPublishMessage(err instanceof Error ? err.message : "An unexpected error occurred.");
+        }
+    };
 
     const handleLoginSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -699,6 +752,20 @@ export default function AdminPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => {
+                            setPublishStatus("idle");
+                            setPublishMessage("");
+                            setIsPublishModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-2 text-xs font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-3.5 py-2 rounded-xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.35)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] cursor-pointer"
+                    >
+                        <svg className="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <span>Publish to Live</span>
+                    </button>
+
                     <Link
                         href="/"
                         target="_blank"
@@ -1509,9 +1576,55 @@ export default function AdminPage() {
                             {/* Data Backup & Restore */}
                             <div>
                                 <div className="border-b border-white/10 pb-4 mb-6">
-                                    <h2 className="text-2xl font-bold text-white">Backup & JSON Data</h2>
+                                    <h2 className="text-2xl font-bold text-white">Backup & GitHub Sync</h2>
                                     <p className="text-sm text-gray-400 mt-1">
-                                        Export, import, or copy your entire portfolio configuration JSON.
+                                        Update your portfolio directly on GitHub or export/import JSON backups.
+                                    </p>
+                                </div>
+
+                                <div className="p-5 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 rounded-2xl space-y-4 mb-6">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <h3 className="text-sm font-bold text-emerald-300 flex items-center gap-2">
+                                            <span>🐙</span> Direct GitHub API Auto-Publish (Method 2)
+                                        </h3>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setPublishStatus("idle");
+                                                setPublishMessage("");
+                                                setIsPublishModalOpen(true);
+                                            }}
+                                            className="inline-flex items-center gap-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg transition-all shadow-[0_0_12px_rgba(16,185,129,0.3)] cursor-pointer"
+                                        >
+                                            🚀 Publish Now
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-gray-300 leading-relaxed">
+                                        When you click <strong>Publish to Live</strong>, your admin panel automatically commits <code className="text-emerald-300 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">data/portfolio.json</code> directly to your GitHub repository using GitHub REST API. GitHub Actions will then rebuild and redeploy your live site automatically in ~30 seconds!
+                                    </p>
+                                    <div className="pt-2 flex flex-wrap items-center gap-3 text-xs text-gray-400">
+                                        <span>Target Repo: <strong className="text-white font-mono">{publishRepo || "AzizRezaPrince/Personal_Portfolio"}</strong></span>
+                                        <span>•</span>
+                                        <span>Token: <span className="text-emerald-400 font-mono">{publishToken ? "•••••••• (Configured)" : "Not Set Yet"}</span></span>
+                                    </div>
+                                </div>
+
+                                <div className="p-5 bg-purple-500/10 border border-purple-500/30 rounded-2xl space-y-3 mb-6">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <h3 className="text-sm font-bold text-purple-300 flex items-center gap-2">
+                                            <span>✏️</span> Manual GitHub Web Editor
+                                        </h3>
+                                        <a
+                                            href="https://github.com/AzizRezaPrince/Personal_Portfolio/edit/main/data/portfolio.json"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1 text-xs font-semibold bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg transition-all shadow-[0_0_10px_rgba(168,85,247,0.3)]"
+                                        >
+                                            Edit on GitHub.com →
+                                        </a>
+                                    </div>
+                                    <p className="text-xs text-gray-300 leading-relaxed">
+                                        Alternatively, you can edit <code className="text-purple-300 bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-500/30">data/portfolio.json</code> directly on GitHub using their web code editor.
                                     </p>
                                 </div>
 
@@ -1906,6 +2019,172 @@ export default function AdminPage() {
                                         className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-medium text-white transition-all cursor-pointer"
                                     >
                                         {editingProj ? "Save Changes" : "Create Project"}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* MODAL: GITHUB AUTO-PUBLISH (METHOD 2) */}
+            <AnimatePresence>
+                {isPublishModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                            className="bg-[#15151c] border border-emerald-500/30 rounded-3xl p-6 md:p-8 w-full max-w-xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] relative overflow-hidden"
+                        >
+                            {/* Ambient Glow */}
+                            <div className="absolute -top-24 -right-24 w-60 h-60 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
+
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-2xl shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                                    🐙
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-white">
+                                        Publish to Live Portfolio
+                                    </h3>
+                                    <p className="text-xs text-gray-400">
+                                        Auto-commit to GitHub & trigger live deployment
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Status Notifications */}
+                            {publishStatus === "loading" && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="mb-5 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center gap-3 text-emerald-300 text-xs"
+                                >
+                                    <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin shrink-0" />
+                                    <span>{publishMessage}</span>
+                                </motion.div>
+                            )}
+
+                            {publishStatus === "success" && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="mb-5 p-4 bg-emerald-500/15 border border-emerald-500/40 rounded-2xl text-emerald-200 text-xs space-y-2"
+                                >
+                                    <div className="flex items-center gap-2 font-bold text-sm text-emerald-300">
+                                        <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Published Successfully to GitHub!
+                                    </div>
+                                    <p className="text-gray-300 leading-relaxed">
+                                        GitHub Actions is now rebuilding and deploying your changes. Your live portfolio link will update automatically in ~30 seconds!
+                                    </p>
+                                    <div className="flex flex-wrap gap-2 pt-2">
+                                        {actionsUrl && (
+                                            <a
+                                                href={actionsUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1 bg-emerald-600/30 hover:bg-emerald-600/40 border border-emerald-500/40 text-emerald-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                                            >
+                                                View GitHub Deployment Progress →
+                                            </a>
+                                        )}
+                                        <a
+                                            href="https://azizrezaprince.github.io/Personal_Portfolio/"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1 bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                                        >
+                                            Open Live Portfolio ↗
+                                        </a>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {publishStatus === "error" && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="mb-5 p-4 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-300 text-xs flex items-start gap-2.5"
+                                >
+                                    <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <div>
+                                        <p className="font-semibold">{publishMessage}</p>
+                                        <p className="text-gray-400 mt-1">Make sure your GitHub Token has <code className="text-red-300 font-mono">repo</code> permissions.</p>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            <form onSubmit={handlePublishToGitHub} className="space-y-4">
+                                <div>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400">
+                                            GitHub Personal Access Token (PAT)
+                                        </label>
+                                        <a
+                                            href="https://github.com/settings/tokens/new?scopes=repo&description=Personal+Portfolio+Admin"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-[11px] text-purple-400 hover:text-purple-300 underline"
+                                        >
+                                            Generate Token on GitHub ↗
+                                        </a>
+                                    </div>
+                                    <input
+                                        type="password"
+                                        value={publishToken}
+                                        onChange={(e) => setPublishToken(e.target.value)}
+                                        placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-emerald-500"
+                                        required
+                                    />
+                                    <p className="text-[11px] text-gray-500 mt-1">
+                                        Your token is stored safely only inside your local browser.
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
+                                        GitHub Repository
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={publishRepo}
+                                        onChange={(e) => setPublishRepo(e.target.value)}
+                                        placeholder="AzizRezaPrince/Personal_Portfolio"
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                                        required
+                                    />
+                                </div>
+
+                                <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsPublishModalOpen(false)}
+                                        className="px-4 py-2 rounded-xl text-xs text-gray-400 hover:text-white transition-colors cursor-pointer"
+                                    >
+                                        Close
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={publishStatus === "loading"}
+                                        className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 text-xs font-semibold text-white transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)] cursor-pointer flex items-center gap-2"
+                                    >
+                                        {publishStatus === "loading" ? (
+                                            <>
+                                                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                <span>Publishing...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span>🚀 Publish to Live Site Now</span>
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             </form>
