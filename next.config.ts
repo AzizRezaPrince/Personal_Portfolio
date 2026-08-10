@@ -6,6 +6,7 @@ const basePath = isGithubActions ? '/Personal_Portfolio' : '';
 
 const nextConfig: NextConfig = {
   output: 'export',
+  trailingSlash: true,
   basePath: basePath,
   env: {
     NEXT_PUBLIC_BASE_PATH: basePath,
