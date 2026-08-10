@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
-const isProd = process.env.NODE_ENV === 'production';
-const basePath = process.env.NEXT_PUBLIC_BASE_PATH || (isProd ? '/Personal_Portfolio' : '');
+// Only apply repository basePath when building inside GitHub Actions for GitHub Pages
+const isGithubActions = process.env.GITHUB_ACTIONS === 'true';
+const basePath = isGithubActions ? '/Personal_Portfolio' : '';
 
 const nextConfig: NextConfig = {
   output: 'export',
@@ -15,3 +16,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+

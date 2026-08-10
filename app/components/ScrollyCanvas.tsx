@@ -109,6 +109,11 @@ export default function ScrollyCanvas() {
 
         const basePath = getBasePath();
 
+        // Safety timeout: ensure page content is never blocked from rendering
+        const fallbackTimer = setTimeout(() => {
+            setIsLoaded(true);
+        }, 1200);
+
         const loadImages = async () => {
             for (let i = 0; i < frameCount; i++) {
                 const filename = `${basePath}/sequence/img_${i.toString().padStart(3, "0")}.webp`;
@@ -129,12 +134,17 @@ export default function ScrollyCanvas() {
 
                 // If error, we just leave it null. The render loop will skip it (fallback).
                 img.onerror = () => {
-                    console.error(`Failed to load: ${filename}`);
+                    console.warn(`Failed to load: ${filename}`);
+                    if (i === 0) {
+                        setIsLoaded(true);
+                    }
                 };
             }
         };
 
         loadImages();
+
+        return () => clearTimeout(fallbackTimer);
     }, []);
 
     // Render loop on scroll changes
