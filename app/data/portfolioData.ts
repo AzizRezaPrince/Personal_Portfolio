@@ -1,0 +1,227 @@
+export interface HeroData {
+    name: string;
+    title: string;
+    tagline1Prefix: string;
+    tagline1Highlight: string;
+    tagline2Prefix: string;
+    tagline2Highlight: string;
+}
+
+export interface EducationItem {
+    id: string;
+    degree: string;
+    institution: string;
+    year: string;
+    grade?: string;
+}
+
+export interface ExperienceItem {
+    id: string;
+    role: string;
+    organization: string;
+    year: string;
+    description: string;
+}
+
+export interface ProjectItem {
+    id: string;
+    title: string;
+    desc: string;
+    tags: string[];
+    image: string;
+    demoUrl?: string;
+    githubUrl?: string;
+    featured?: boolean;
+}
+
+export interface ContactItem {
+    id: string;
+    label: string;
+    value: string;
+    type: "email" | "link" | "phone";
+    url?: string;
+}
+
+export interface PortfolioData {
+    hero: HeroData;
+    about: {
+        bio: string[];
+        skills: string[];
+        languages: string[];
+    };
+    education: EducationItem[];
+    experience: ExperienceItem[];
+    projects: ProjectItem[];
+    contact: {
+        title: string;
+        subtitle: string;
+        items: ContactItem[];
+    };
+    footer: {
+        copyright: string;
+    };
+}
+
+export const defaultPortfolioData: PortfolioData = {
+    hero: {
+        name: "AZIZ REZA PRINCE",
+        title: "UI/UX & Android Dev",
+        tagline1Prefix: "Passionate about",
+        tagline1Highlight: "technology.",
+        tagline2Prefix: "Exploring code",
+        tagline2Highlight: "& creativity.",
+    },
+    about: {
+        bio: [
+            "Enthusiastic CSE student with practical experience in event coordination, documentation, and content creation through active roles in campus clubs and organizations.",
+            "Skilled in teamwork, communication, and various digital tools. Passionate about learning, supporting others, and contributing to both technical and creative projects.",
+        ],
+        skills: [
+            "Figma",
+            "Canva",
+            "Adobe Photoshop",
+            "Adobe Illustrator",
+            "Flutter",
+            "Dart",
+            "UI/UX Design",
+            "Prototyping",
+            "Wireframing",
+            "Material Design",
+            "Firebase",
+            "App Development",
+        ],
+        languages: ["Bangla (Native)", "English (Fluent)"],
+    },
+    education: [
+        {
+            id: "edu-1",
+            degree: "Bachelor of Science in CSE",
+            institution: "Patuakhali Science and Technology University",
+            year: "2022 - Present",
+            grade: "",
+        },
+        {
+            id: "edu-2",
+            degree: "H.S.C (Science)",
+            institution: "Nawabganj Government College",
+            year: "2020",
+            grade: "GPA: 5.00 / 5.00",
+        },
+        {
+            id: "edu-3",
+            degree: "S.S.C (Science)",
+            institution: "Harimohan Government High School",
+            year: "2018",
+            grade: "GPA: 5.00 / 5.00",
+        },
+    ],
+    experience: [
+        {
+            id: "exp-1",
+            role: "Campus Co-ordinator",
+            organization: "Youth Upskill Network - YUNet",
+            year: "2025 - Present",
+            description: "Working with the development team and representing YUNet as a campus ambassador in PSTU.\nManaging events with the organizer team.",
+        },
+        {
+            id: "exp-2",
+            role: "Assistant General Secretary",
+            organization: "CSE Club PSTU",
+            year: "2025 - Present",
+            description: "Assisted in planning and organizing cultural and sports events for CSE students.\nCoordinated logistics, registrations, and communications for events.\nHelped maintain documentation and reports of wing activities.",
+        },
+        {
+            id: "exp-3",
+            role: "Graphics Designer",
+            organization: "PSTU Youthmappers",
+            year: "2024 - 2025",
+            description: "Designed posters, banners, and social media content for various events.\nCollaborated with the executive team to maintain brand consistency.\nCreated visual assets to promote club activities and workshops.",
+        },
+        {
+            id: "exp-4",
+            role: "Executive Member",
+            organization: "PSTU PHOTOGRAPHY CLUB",
+            year: "2024 - 2025",
+            description: "Participated in organizing photography exhibitions and workshops.\nAssisted in mentoring new members and curating photo submissions.\nContributed to event coverage and visual storytelling projects.",
+        },
+        {
+            id: "exp-5",
+            role: "Documentation Team Co-ordinator",
+            organization: "PSTU Youthmappers",
+            year: "2023-2024",
+            description: "Led the documentation of mapping activities, events, and trainings.\nSupported visibility and outreach by promoting club activities.\nCreated blog posts, newsletters, and summary reports.",
+        },
+        {
+            id: "exp-6",
+            role: "Content Creator",
+            organization: "PSTU PHOTOGRAPHY CLUB",
+            year: "2023 - 2024",
+            description: "Created and managed visual and written content for social media and events.\nCollaborated with photographers to publish engaging content.\nHandled social media posts, captions, and visual storytelling.",
+        },
+    ],
+    projects: [
+        {
+            id: "proj-1",
+            title: "Prismio",
+            desc: "Interactive 3D Learning App",
+            tags: ["Flutter", "3D Visualization", "Education UI"],
+            image: "/prismio.png",
+            demoUrl: "",
+            githubUrl: "",
+            featured: true,
+        },
+        {
+            id: "proj-2",
+            title: "Jersey Shop",
+            desc: "Modern Sports E-Commerce Design",
+            tags: ["Web Design", "UI/UX", "Figma"],
+            image: "/jersey_shop.png",
+            demoUrl: "",
+            githubUrl: "",
+            featured: true,
+        },
+        {
+            id: "proj-3",
+            title: "Car Rental System",
+            desc: "Vehicle Booking Platform with Admin Panel",
+            tags: ["PHP", "HTML/CSS", "MySQL"],
+            image: "/car_rental.png",
+            demoUrl: "",
+            githubUrl: "",
+            featured: false,
+        },
+        {
+            id: "proj-4",
+            title: "Music Player App",
+            desc: "Sleek Audio Streaming Interface",
+            tags: ["Mobile App", "UI Design", "Visuals"],
+            image: "/music_player.jpg",
+            demoUrl: "",
+            githubUrl: "",
+            featured: false,
+        },
+    ],
+    contact: {
+        title: "Get In Touch",
+        subtitle: "Feel free to reach out for collaborations, questions, or just to say hello.",
+        items: [
+            {
+                id: "contact-1",
+                label: "Academic Email",
+                value: "aziz18@cse.pstu.ac.bd",
+                type: "email",
+                url: "mailto:aziz18@cse.pstu.ac.bd",
+            },
+            {
+                id: "contact-2",
+                label: "Personal Email",
+                value: "arprincedabbu@gmail.com",
+                type: "email",
+                url: "mailto:arprincedabbu@gmail.com",
+            },
+        ],
+    },
+    footer: {
+        copyright: "© Prince's Portfolio. All Rights Reserved.",
+    },
+};

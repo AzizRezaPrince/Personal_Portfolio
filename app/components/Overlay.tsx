@@ -1,12 +1,15 @@
 "use client";
 
 import { motion, useTransform, MotionValue } from "framer-motion";
+import { usePortfolioData } from "@/app/context/PortfolioContext";
 
 interface OverlayProps {
     scrollYProgress: MotionValue<number>;
 }
 
 export default function Overlay({ scrollYProgress }: OverlayProps) {
+    const { data } = usePortfolioData();
+    const hero = data.hero;
 
     // Section 1: Center
     const opacity1 = useTransform(scrollYProgress, [0, 0.15], [1, 0]);
@@ -26,37 +29,39 @@ export default function Overlay({ scrollYProgress }: OverlayProps) {
             {/* Section 1 - Centered */}
             <motion.div
                 style={{ opacity: opacity1, y: y1 }}
-                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center w-full"
+                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center w-full px-4"
             >
-                <h1 className="text-6xl md:text-8xl font-bold tracking-tighter text-white mb-6">
-                    AZIZ REZA PRINCE
+                <h1 className="text-5xl md:text-8xl font-bold tracking-tighter text-white mb-6 uppercase">
+                    {hero.name}
                 </h1>
-                <p className="text-xl md:text-2xl text-gray-400 font-light tracking-[0.2em] uppercase">
-                    UI/UX & Android Dev
+                <p className="text-lg md:text-2xl text-purple-300 font-light tracking-[0.2em] uppercase">
+                    {hero.title}
                 </p>
             </motion.div>
 
             {/* Section 2 - Left Aligned */}
             <motion.div
                 style={{ opacity: opacity2, x: x2 }}
-                className="absolute top-1/2 left-10 md:left-20 transform -translate-y-1/2 max-w-2xl"
+                className="absolute top-1/2 left-6 md:left-20 transform -translate-y-1/2 max-w-2xl px-4"
             >
-                <h2 className="text-4xl md:text-6xl font-semibold text-white leading-tight">
-                    Passionate about <span className="text-gray-500">technology.</span>
+                <h2 className="text-3xl md:text-6xl font-semibold text-white leading-tight">
+                    {hero.tagline1Prefix}{" "}
+                    <span className="text-purple-400 font-bold">{hero.tagline1Highlight}</span>
                 </h2>
             </motion.div>
 
             {/* Section 3 - Right Aligned */}
             <motion.div
                 style={{ opacity: opacity3, x: x3 }}
-                className="absolute top-1/2 right-10 md:right-20 transform -translate-y-1/2 max-w-2xl text-right"
+                className="absolute top-1/2 right-6 md:right-20 transform -translate-y-1/2 max-w-2xl text-right px-4"
             >
-                <h2 className="text-4xl md:text-6xl font-semibold text-white leading-tight">
-                    Exploring code <br />
-                    <span className="text-gray-500">& creativity.</span>
+                <h2 className="text-3xl md:text-6xl font-semibold text-white leading-tight">
+                    {hero.tagline2Prefix} <br />
+                    <span className="text-purple-400 font-bold">{hero.tagline2Highlight}</span>
                 </h2>
             </motion.div>
 
         </div>
     );
 }
+

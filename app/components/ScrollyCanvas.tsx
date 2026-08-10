@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useScroll, useTransform, useMotionValueEvent, useSpring } from "framer-motion";
 import Overlay from "./Overlay";
+import { getBasePath } from "@/app/utils/basePath";
 
 export default function ScrollyCanvas() {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -106,10 +107,7 @@ export default function ScrollyCanvas() {
         imagesRef.current = new Array(frameCount).fill(null);
         loadedFramesRef.current = new Array(frameCount).fill(false);
 
-        let basePath = '';
-        if (typeof window !== 'undefined' && window.location.hostname.endsWith('github.io')) {
-            basePath = '/my-portfolio';
-        }
+        const basePath = getBasePath();
 
         const loadImages = async () => {
             for (let i = 0; i < frameCount; i++) {

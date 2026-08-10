@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { PortfolioProvider } from "./context/PortfolioContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Scrollytelling Portfolio",
-  description: "A high-end scrollytelling portfolio website.",
+  title: "Aziz Reza Prince | Portfolio",
+  description: "UI/UX Designer & Android App Developer Portfolio",
 };
 
 export default function RootLayout({
@@ -17,7 +18,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} antialiased`}>
-        {children}
+        <PortfolioProvider>
+          {children}
+        </PortfolioProvider>
       </body>
     </html>
   );

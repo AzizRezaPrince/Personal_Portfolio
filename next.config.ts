@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const isProd = process.env.NODE_ENV === 'production';
-const basePath = isProd ? '/my-portfolio' : '';
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || (isProd ? '/Personal_Portfolio' : '');
 
 const nextConfig: NextConfig = {
   output: 'export',

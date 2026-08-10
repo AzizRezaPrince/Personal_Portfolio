@@ -1,45 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-
-const education = [
-    {
-        degree: "Bachelor of Science in CSE",
-        institution: "Patuakhali Science and Technology University",
-        year: "2022 - Present",
-        grade: "",
-    },
-    {
-        degree: "H.S.C (Science)",
-        institution: "Nawabganj Government College",
-        year: "2020",
-        grade: "GPA: 5.00 / 5.00",
-    },
-    {
-        degree: "S.S.C (Science)",
-        institution: "Harimohan Government High School",
-        year: "2018",
-        grade: "GPA: 5.00 / 5.00",
-    },
-];
-
-const skills = [
-    "Figma",
-    "Canva",
-    "Adobe Photoshop",
-    "Adobe Illustrator",
-    "Flutter",
-    "Dart",
-    "UI/UX Design",
-    "Prototyping",
-    "Wireframing",
-    "Material Design",
-    "Firebase",
-    "App Development"
-];
-const languages = ["Bangla (Native)", "English (Fluent)"];
+import { usePortfolioData } from "@/app/context/PortfolioContext";
 
 export default function About() {
+    const { data } = usePortfolioData();
+    const { bio, skills, languages } = data.about;
+    const education = data.education;
+
     return (
         <section className="relative w-full bg-[#121212] py-20 px-6 md:px-12 text-white z-10">
             <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16">
@@ -54,16 +22,13 @@ export default function About() {
                     <h2 className="text-4xl md:text-5xl font-bold mb-8 tracking-tight text-white/90">
                         About Me
                     </h2>
-                    <p className="text-lg text-gray-400 leading-relaxed mb-6">
-                        Enthusiastic CSE student with practical experience in event coordination,
-                        documentation, and content creation through active roles in campus clubs and
-                        organizations.
-                    </p>
-                    <p className="text-lg text-gray-400 leading-relaxed">
-                        Skilled in teamwork, communication, and various digital tools.
-                        Passionate about learning, supporting others, and contributing to both technical and
-                        creative projects.
-                    </p>
+                    <div className="space-y-6">
+                        {bio.map((paragraph, idx) => (
+                            <p key={idx} className="text-lg text-gray-400 leading-relaxed">
+                                {paragraph}
+                            </p>
+                        ))}
+                    </div>
 
                     <div className="mt-12">
                         <h3 className="text-2xl font-semibold mb-6 flex items-center gap-2">
@@ -109,8 +74,8 @@ export default function About() {
                         Education
                     </h3>
                     <div className="space-y-10">
-                        {education.map((edu, index) => (
-                            <div key={index} className="group">
+                        {education.map((edu) => (
+                            <div key={edu.id} className="group">
                                 <div className="flex justify-between items-baseline mb-2">
                                     <h4 className="text-xl font-semibold text-white group-hover:text-purple-400 transition-colors">
                                         {edu.institution}
