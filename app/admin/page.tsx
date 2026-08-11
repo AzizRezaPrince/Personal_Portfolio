@@ -442,13 +442,48 @@ export default function AdminPage() {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Convert image file to base64 Data URL
+        // Convert and optimize image file to compressed base64 Data URL
         const reader = new FileReader();
-        reader.onloadend = () => {
-            if (typeof reader.result === "string") {
-                setProjForm((prev) => ({ ...prev, image: reader.result as string }));
-                showToast("Project image loaded!");
-            }
+        reader.onload = (event) => {
+            const rawUrl = event.target?.result as string;
+            if (!rawUrl) return;
+
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement("canvas");
+                const MAX_WIDTH = 1200;
+                const MAX_HEIGHT = 800;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height = Math.round((height * MAX_WIDTH) / width);
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width = Math.round((width * MAX_HEIGHT) / height);
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext("2d");
+                if (ctx) {
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const optimizedDataUrl =
+                        canvas.toDataURL("image/webp", 0.85) ||
+                        canvas.toDataURL("image/jpeg", 0.85);
+                    setProjForm((prev) => ({ ...prev, image: optimizedDataUrl }));
+                    showToast("Project image optimized & loaded!");
+                } else {
+                    setProjForm((prev) => ({ ...prev, image: rawUrl }));
+                    showToast("Project image loaded!");
+                }
+            };
+            img.src = rawUrl;
         };
         reader.readAsDataURL(file);
     };

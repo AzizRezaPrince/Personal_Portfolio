@@ -64,31 +64,41 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
 
     // Load data from LocalStorage and live portfolio.json on mount
     useEffect(() => {
+        let localTimestamp = 0;
+        let localDataParsed: PortfolioData | null = null;
+
         // First load from localStorage if available for immediate real-time responsiveness
         try {
             const savedData = localStorage.getItem(DATA_STORAGE_KEY);
             if (savedData) {
-                const parsed = JSON.parse(savedData);
-                setData(parsed);
+                localDataParsed = JSON.parse(savedData);
+                if (localDataParsed) {
+                    localTimestamp = localDataParsed.updatedAt || 0;
+                    setData(localDataParsed);
+                }
             }
         } catch (e) {
             console.error("Failed to load portfolio data from localStorage", e);
         }
 
-        // Always fetch fresh live portfolio.json from GitHub/Server to ensure latest published updates show up
+        // Fetch fresh live portfolio.json from GitHub/Server
         const basePath = getBasePath();
         fetch(`${basePath}/portfolio.json?t=${Date.now()}`, { cache: "no-store" })
             .then((res) => {
                 if (res.ok) return res.json();
                 throw new Error("Failed to fetch live portfolio.json");
             })
-            .then((remoteData) => {
+            .then((remoteData: PortfolioData) => {
                 if (remoteData && remoteData.hero) {
-                    setData(remoteData);
-                    try {
-                        localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(remoteData));
-                    } catch {
-                        // ignore storage errors
+                    const remoteTimestamp = remoteData.updatedAt || 0;
+                    // Only overwrite local state if remote is newer or no local edits exist
+                    if (!localDataParsed || remoteTimestamp >= localTimestamp) {
+                        setData(remoteData);
+                        try {
+                            localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(remoteData));
+                        } catch {
+                            // ignore storage errors
+                        }
                     }
                 }
             })
@@ -123,11 +133,15 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
         return () => window.removeEventListener("storage", handleStorageChange);
     }, []);
 
-    // Helper to persist data to localStorage
+    // Helper to persist data to localStorage with timestamp
     const persistData = (newData: PortfolioData) => {
-        setData(newData);
+        const dataWithTimestamp: PortfolioData = {
+            ...newData,
+            updatedAt: Date.now(),
+        };
+        setData(dataWithTimestamp);
         try {
-            localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(newData));
+            localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(dataWithTimestamp));
         } catch (e) {
             console.error("Failed to save portfolio data to localStorage", e);
         }

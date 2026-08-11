@@ -24,13 +24,14 @@ export function saveStoredGitHubRepo(repo: string) {
     localStorage.setItem(GITHUB_REPO_KEY, repo.trim() || DEFAULT_REPO);
 }
 
-// Safely encode Unicode string to base64 for GitHub REST API
+// Safely encode Unicode string to base64 for GitHub REST API in safe chunks
 function utf8ToBase64(str: string): string {
     const bytes = new TextEncoder().encode(str);
+    const CHUNK_SIZE = 8192;
     let binary = "";
-    const len = bytes.byteLength;
-    for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(bytes[i]);
+    for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+        const chunk = bytes.subarray(i, i + CHUNK_SIZE);
+        binary += String.fromCharCode.apply(null, Array.from(chunk));
     }
     return btoa(binary);
 }
@@ -123,7 +124,12 @@ export async function publishPortfolioToGitHub(
         };
     }
 
-    const jsonString = JSON.stringify(portfolioData, null, 2);
+    const dataToPublish: PortfolioData = {
+        ...portfolioData,
+        updatedAt: Date.now(),
+    };
+
+    const jsonString = JSON.stringify(dataToPublish, null, 2);
 
     try {
         // 1. Commit to data/portfolio.json

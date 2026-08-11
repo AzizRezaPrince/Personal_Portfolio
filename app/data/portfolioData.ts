@@ -62,6 +62,7 @@ export interface PortfolioData {
     footer: {
         copyright: string;
     };
+    updatedAt?: number;
 }
 
 export const defaultPortfolioData: PortfolioData = initialPortfolioData as PortfolioData;
