@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { getBasePath } from "@/app/utils/basePath";
 import {
     PortfolioData,
@@ -30,6 +30,8 @@ interface PortfolioContextType {
     data: PortfolioData;
     isLoaded: boolean;
     isAuthenticated: boolean;
+    lastSavedAt: number | null;
+    isSaving: boolean;
     login: (username: string, passcode: string) => boolean;
     logout: () => void;
     updateCredentials: (newUsername: string, newPasscode: string) => void;
@@ -53,6 +55,7 @@ interface PortfolioContextType {
     resetToDefaults: () => void;
     exportJSON: () => string;
     importJSON: (jsonString: string) => { success: boolean; error?: string };
+    saveAllNow: () => Promise<boolean>;
 }
 
 const PortfolioContext = createContext<PortfolioContextType | null>(null);
@@ -61,52 +64,86 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     const [data, setData] = useState<PortfolioData>(defaultPortfolioData);
     const [isLoaded, setIsLoaded] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
-    // Load data from LocalStorage and live portfolio.json on mount
+    // Load data from LocalStorage and remote on mount
     useEffect(() => {
         let localTimestamp = 0;
         let localDataParsed: PortfolioData | null = null;
 
-        // First load from localStorage if available for immediate real-time responsiveness
+        // 1. First load from localStorage for immediate render
         try {
             const savedData = localStorage.getItem(DATA_STORAGE_KEY);
             if (savedData) {
                 localDataParsed = JSON.parse(savedData);
-                if (localDataParsed) {
-                    localTimestamp = localDataParsed.updatedAt || 0;
+                if (localDataParsed && localDataParsed.hero) {
+                    localTimestamp = localDataParsed.updatedAt || 1;
                     setData(localDataParsed);
+                    setLastSavedAt(localTimestamp);
                 }
             }
         } catch (e) {
             console.error("Failed to load portfolio data from localStorage", e);
         }
 
-        // Fetch fresh live portfolio.json from GitHub/Server
-        const basePath = getBasePath();
-        fetch(`${basePath}/portfolio.json?t=${Date.now()}`, { cache: "no-store" })
-            .then((res) => {
-                if (res.ok) return res.json();
-                throw new Error("Failed to fetch live portfolio.json");
-            })
-            .then((remoteData: PortfolioData) => {
-                if (remoteData && remoteData.hero) {
-                    const remoteTimestamp = remoteData.updatedAt || 0;
-                    // Only overwrite local state if remote is newer or no local edits exist
-                    if (!localDataParsed || remoteTimestamp >= localTimestamp) {
-                        setData(remoteData);
+        // 2. Fetch fresh live data from local API or static portfolio.json
+        const fetchInitialData = async () => {
+            try {
+                let fetchedData: PortfolioData | null = null;
+
+                // Try local API route first if available
+                try {
+                    const apiRes = await fetch("/api/portfolio", { cache: "no-store" });
+                    if (apiRes.ok) {
+                        fetchedData = await apiRes.json();
+                    }
+                } catch {
+                    // Ignore API fetch error in static export
+                }
+
+                // Fallback to static public/portfolio.json
+                if (!fetchedData) {
+                    const basePath = getBasePath();
+                    const jsonRes = await fetch(`${basePath}/portfolio.json?t=${Date.now()}`, { cache: "no-store" });
+                    if (jsonRes.ok) {
+                        fetchedData = await jsonRes.json();
+                    }
+                }
+
+                if (fetchedData && fetchedData.hero) {
+                    const remoteTimestamp = fetchedData.updatedAt || 0;
+
+                    // Only update from remote if remote is strictly newer than local edits
+                    if (!localDataParsed || remoteTimestamp > localTimestamp) {
+                        setData(fetchedData);
+                        setLastSavedAt(remoteTimestamp || Date.now());
                         try {
-                            localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(remoteData));
+                            localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(fetchedData));
                         } catch {
                             // ignore storage errors
                         }
+                    } else if (localDataParsed && localTimestamp > remoteTimestamp) {
+                        // Local has newer edits; sync them to disk API if running locally
+                        try {
+                            fetch("/api/portfolio", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(localDataParsed),
+                            }).catch(() => {});
+                        } catch {
+                            // ignore
+                        }
                     }
                 }
-            })
-            .catch(() => {
-                // Fallback to existing loaded data
-            });
+            } catch {
+                // Fallback to existing loaded state
+            }
+        };
 
-        // Check authentication session
+        fetchInitialData();
+
+        // 3. Check authentication session
         try {
             const authSession = sessionStorage.getItem(SESSION_STORAGE_KEY);
             if (authSession === "true") {
@@ -118,11 +155,15 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
 
         setIsLoaded(true);
 
-        // Listen for storage events (real-time multi-tab and live sync)
+        // 4. Listen for storage events (multi-tab sync)
         const handleStorageChange = (e: StorageEvent) => {
             if (e.key === DATA_STORAGE_KEY && e.newValue) {
                 try {
-                    setData(JSON.parse(e.newValue));
+                    const updated = JSON.parse(e.newValue);
+                    if (updated && updated.hero) {
+                        setData(updated);
+                        setLastSavedAt(updated.updatedAt || Date.now());
+                    }
                 } catch (err) {
                     console.error("Sync error:", err);
                 }
@@ -133,19 +174,70 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
         return () => window.removeEventListener("storage", handleStorageChange);
     }, []);
 
-    // Helper to persist data to localStorage with timestamp
-    const persistData = (newData: PortfolioData) => {
+    // Helper to persist data to localStorage, local disk API, and state
+    const persistData = useCallback((newData: PortfolioData) => {
+        const now = Date.now();
         const dataWithTimestamp: PortfolioData = {
             ...newData,
-            updatedAt: Date.now(),
+            updatedAt: now,
         };
+
+        // 1. Update React state immediately
         setData(dataWithTimestamp);
+        setLastSavedAt(now);
+        setIsSaving(true);
+
+        // 2. Persist to localStorage
         try {
             localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(dataWithTimestamp));
         } catch (e) {
             console.error("Failed to save portfolio data to localStorage", e);
         }
-    };
+
+        // 3. Persist to local disk files via Next.js API route
+        fetch("/api/portfolio", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(dataWithTimestamp),
+        })
+            .catch(() => {
+                // In static exported environment, this will gracefully fail without errors
+            })
+            .finally(() => {
+                setIsSaving(false);
+            });
+    }, []);
+
+    // Manual Save trigger
+    const saveAllNow = useCallback(async (): Promise<boolean> => {
+        const now = Date.now();
+        const dataWithTimestamp: PortfolioData = {
+            ...data,
+            updatedAt: now,
+        };
+
+        setData(dataWithTimestamp);
+        setLastSavedAt(now);
+
+        try {
+            localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(dataWithTimestamp));
+        } catch {
+            // ignore
+        }
+
+        try {
+            const res = await fetch("/api/portfolio", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(dataWithTimestamp),
+            });
+            return res.ok;
+        } catch {
+            return false;
+        }
+    }, [data]);
 
     // Authentication helpers
     const getCredentials = (): AdminCredentials => {
@@ -329,6 +421,8 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
                 data,
                 isLoaded,
                 isAuthenticated,
+                lastSavedAt,
+                isSaving,
                 login,
                 logout,
                 updateCredentials,
@@ -352,6 +446,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
                 resetToDefaults,
                 exportJSON,
                 importJSON,
+                saveAllNow,
             }}
         >
             {children}

@@ -16,6 +16,7 @@ import {
     getStoredGitHubRepo,
     saveStoredGitHubRepo,
     publishPortfolioToGitHub,
+    testGitHubConnection,
 } from "@/app/utils/githubSync";
 import { getBasePath } from "@/app/utils/basePath";
 
@@ -34,6 +35,8 @@ export default function AdminPage() {
         data,
         isLoaded,
         isAuthenticated,
+        lastSavedAt,
+        isSaving,
         login,
         logout,
         updateCredentials,
@@ -57,6 +60,7 @@ export default function AdminPage() {
         resetToDefaults,
         exportJSON,
         importJSON,
+        saveAllNow,
     } = usePortfolioData();
 
     // Login state
@@ -75,7 +79,7 @@ export default function AdminPage() {
         setToastMessage(msg);
         setTimeout(() => {
             setToastMessage(null);
-        }, 3000);
+        }, 3500);
     };
 
     const formatImageUrl = (img: string) => {
@@ -97,6 +101,8 @@ export default function AdminPage() {
     const [publishStatus, setPublishStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
     const [publishMessage, setPublishMessage] = useState("");
     const [actionsUrl, setActionsUrl] = useState("");
+    const [testConnectionStatus, setTestConnectionStatus] = useState<"idle" | "testing" | "success" | "error">("idle");
+    const [testConnectionMessage, setTestConnectionMessage] = useState("");
 
     // Hero local form state
     const [heroForm, setHeroForm] = useState(data.hero);
@@ -183,6 +189,26 @@ export default function AdminPage() {
         }
     }, [data, isLoaded]);
 
+    const handleTestToken = async () => {
+        if (!publishToken.trim()) {
+            setTestConnectionStatus("error");
+            setTestConnectionMessage("Please enter a GitHub Personal Access Token first.");
+            return;
+        }
+        setTestConnectionStatus("testing");
+        setTestConnectionMessage("Connecting to GitHub API...");
+        const result = await testGitHubConnection(publishToken, publishRepo);
+        if (result.success) {
+            setTestConnectionStatus("success");
+            setTestConnectionMessage(`Connected successfully to ${result.repoName}!`);
+            saveStoredGitHubToken(publishToken);
+            saveStoredGitHubRepo(publishRepo);
+        } else {
+            setTestConnectionStatus("error");
+            setTestConnectionMessage(result.error || "Connection failed.");
+        }
+    };
+
     const handlePublishToGitHub = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         if (!publishToken.trim()) {
@@ -219,6 +245,15 @@ export default function AdminPage() {
         }
     };
 
+    const handleSaveAllToDisk = async () => {
+        const ok = await saveAllNow();
+        if (ok) {
+            showToast("💾 Saved all data to local files and browser!");
+        } else {
+            showToast("💾 Saved to browser local storage!");
+        }
+    };
+
     const handleLoginSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setLoginError("");
@@ -234,7 +269,7 @@ export default function AdminPage() {
     const handleSaveHero = (e: React.FormEvent) => {
         e.preventDefault();
         updateHero(heroForm);
-        showToast("Hero section updated successfully!");
+        showToast("Hero section updated and saved!");
     };
 
     // Save Bio
@@ -781,29 +816,50 @@ export default function AdminPage() {
             </AnimatePresence>
 
             {/* Top Navigation Bar */}
-            <header className="sticky top-0 z-40 w-full bg-[#131318]/80 backdrop-blur-md border-b border-white/10 px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-4">
+            <header className="sticky top-0 z-40 w-full bg-[#131318]/90 backdrop-blur-md border-b border-white/10 px-4 md:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300 font-bold text-lg shadow-[0_0_15px_rgba(168,85,247,0.2)]">
                         P
                     </div>
                     <div>
                         <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-2">
                             Prince Portfolio Manager
-                            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-normal">
-                                Live Sync
-                            </span>
                         </h1>
-                        <p className="text-xs text-gray-400">
-                            Editing Aziz Reza Prince&apos;s Portfolio
-                        </p>
+                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                            {isSaving ? (
+                                <span className="inline-flex items-center gap-1.5 text-amber-400 text-[11px] font-mono">
+                                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                                    Auto-saving to disk...
+                                </span>
+                            ) : (
+                                <span className="inline-flex items-center gap-1.5 text-emerald-400 text-[11px] font-mono">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                                    Auto-Saved to Local Files & Browser
+                                    {lastSavedAt ? ` (${new Date(lastSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})` : ''}
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center flex-wrap gap-2.5">
+                    <button
+                        onClick={handleSaveAllToDisk}
+                        title="Force save all data to disk files"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/10 hover:bg-white/15 border border-white/15 text-gray-200 hover:text-white px-3 py-2 rounded-xl transition-all cursor-pointer shadow-sm"
+                    >
+                        <svg className="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                        </svg>
+                        <span>Save to Files</span>
+                    </button>
+
                     <button
                         onClick={() => {
                             setPublishStatus("idle");
                             setPublishMessage("");
+                            setTestConnectionStatus("idle");
+                            setTestConnectionMessage("");
                             setIsPublishModalOpen(true);
                         }}
                         className="inline-flex items-center gap-2 text-xs font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-3.5 py-2 rounded-xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.35)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] cursor-pointer"
@@ -827,13 +883,13 @@ export default function AdminPage() {
 
                     <button
                         onClick={handleDownloadJSON}
-                        title="Download JSON backup"
+                        title="Download portfolio.json file"
                         className="hidden md:inline-flex items-center gap-1.5 text-xs font-medium bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 px-3 py-2 rounded-xl transition-all cursor-pointer"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
-                        Export JSON
+                        Download JSON
                     </button>
 
                     <button
@@ -1624,74 +1680,81 @@ export default function AdminPage() {
                             {/* Data Backup & Restore */}
                             <div>
                                 <div className="border-b border-white/10 pb-4 mb-6">
-                                    <h2 className="text-2xl font-bold text-white">Backup & GitHub Sync</h2>
+                                    <h2 className="text-2xl font-bold text-white">Permanent Save & Deployment Guide</h2>
                                     <p className="text-sm text-gray-400 mt-1">
-                                        Update your portfolio directly on GitHub or export/import JSON backups.
+                                        Learn how your changes are permanently saved and how to update the live website.
                                     </p>
                                 </div>
 
-                                <div className="p-5 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 rounded-2xl space-y-4 mb-6">
-                                    <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <h3 className="text-sm font-bold text-emerald-300 flex items-center gap-2">
-                                            <span>🐙</span> Direct GitHub API Auto-Publish (Method 2)
-                                        </h3>
+                                {/* Methods Explanation */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                    {/* Method 1: Local Auto Save */}
+                                    <div className="p-5 bg-purple-500/10 border border-purple-500/30 rounded-2xl space-y-3">
+                                        <div className="flex items-center gap-2 text-purple-300 font-bold text-sm">
+                                            <span>💻</span> 1. Local Auto-Save (কম্পিউটারে অটো সেভ)
+                                        </div>
+                                        <p className="text-xs text-gray-300 leading-relaxed">
+                                            আপনি যখন লোকালি (<code className="text-purple-300 font-mono">npm run dev</code>) কাজ করবেন, অ্যাডমিন প্যানেলে যেকোনো কিছু সেভ করলেই স্বয়ংক্রিয়ভাবে আপনার কম্পিউটারের <code className="text-purple-300 font-mono">data/portfolio.json</code> ও <code className="text-purple-300 font-mono">public/portfolio.json</code> ফাইলে সেভ হয়ে যায়।
+                                        </p>
+                                        <button
+                                            onClick={handleSaveAllToDisk}
+                                            className="w-full bg-purple-600/30 hover:bg-purple-600/40 border border-purple-500/40 text-purple-200 text-xs font-semibold py-2 rounded-xl transition-all cursor-pointer"
+                                        >
+                                            💾 Save All to Local Files Now
+                                        </button>
+                                    </div>
+
+                                    {/* Method 2: 1-Click Live Publish */}
+                                    <div className="p-5 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2 text-emerald-300 font-bold text-sm">
+                                                <span>🚀</span> 2. Live GitHub Publish (১-ক্লিক লাইভ)
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-gray-300 leading-relaxed">
+                                            আপনার লাইভ সাইট (<code className="text-emerald-300 font-mono">azizrezaprince.github.io</code>) পার্মানেন্টলি আপডেট করতে <strong>Publish to Live</strong> বাটনে ক্লিক করে GitHub Personal Access Token দিন। GitHub Actions ৩০ সেকেন্ডের মধ্যে লাইভ লিঙ্ক আপডেট করে দিবে।
+                                        </p>
                                         <button
                                             type="button"
                                             onClick={() => {
                                                 setPublishStatus("idle");
                                                 setPublishMessage("");
+                                                setTestConnectionStatus("idle");
+                                                setTestConnectionMessage("");
                                                 setIsPublishModalOpen(true);
                                             }}
-                                            className="inline-flex items-center gap-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg transition-all shadow-[0_0_12px_rgba(16,185,129,0.3)] cursor-pointer"
+                                            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2 rounded-xl transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] cursor-pointer"
                                         >
-                                            🚀 Publish Now
+                                            🐙 Open Publish to Live Dialog
                                         </button>
-                                    </div>
-                                    <p className="text-xs text-gray-300 leading-relaxed">
-                                        When you click <strong>Publish to Live</strong>, your admin panel automatically commits <code className="text-emerald-300 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">data/portfolio.json</code> directly to your GitHub repository using GitHub REST API. GitHub Actions will then rebuild and redeploy your live site automatically in ~30 seconds!
-                                    </p>
-                                    <div className="pt-2 flex flex-wrap items-center gap-3 text-xs text-gray-400">
-                                        <span>Target Repo: <strong className="text-white font-mono">{publishRepo || "AzizRezaPrince/Personal_Portfolio"}</strong></span>
-                                        <span>•</span>
-                                        <span>Token: <span className="text-emerald-400 font-mono">{publishToken ? "•••••••• (Configured)" : "Not Set Yet"}</span></span>
                                     </div>
                                 </div>
 
-                                <div className="p-5 bg-purple-500/10 border border-purple-500/30 rounded-2xl space-y-3 mb-6">
-                                    <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <h3 className="text-sm font-bold text-purple-300 flex items-center gap-2">
-                                            <span>✏️</span> Manual GitHub Web Editor
-                                        </h3>
-                                        <a
-                                            href="https://github.com/AzizRezaPrince/Personal_Portfolio/edit/main/data/portfolio.json"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 text-xs font-semibold bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg transition-all shadow-[0_0_10px_rgba(168,85,247,0.3)]"
-                                        >
-                                            Edit on GitHub.com →
-                                        </a>
+                                <div className="p-5 bg-blue-500/10 border border-blue-500/30 rounded-2xl space-y-3 mb-6">
+                                    <div className="flex items-center gap-2 text-blue-300 font-bold text-sm">
+                                        <span>📥</span> 3. Manual Download & Replace (ম্যানুয়ালি ফাইল রিপ্লেস)
                                     </div>
                                     <p className="text-xs text-gray-300 leading-relaxed">
-                                        Alternatively, you can edit <code className="text-purple-300 bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-500/30">data/portfolio.json</code> directly on GitHub using their web code editor.
+                                        টোকেন ছাড়া ম্যানুয়ালি আপডেট করতে চাইলে: নিচের <strong>Download JSON File</strong> বাটনে ক্লিক করুন। ডাউনলোড হওয়া <code className="text-blue-300 font-mono">portfolio.json</code> ফাইলটি আপনার প্রজেক্টের <code className="text-blue-300 font-mono">data/portfolio.json</code> এবং <code className="text-blue-300 font-mono">public/portfolio.json</code> ফোল্ডারে পেস্ট করুন। এরপর গিটহাবে পুশ করুন।
                                     </p>
                                 </div>
 
                                 <div className="flex flex-wrap gap-4 mb-6">
                                     <button
                                         onClick={handleDownloadJSON}
-                                        className="bg-white/10 hover:bg-white/20 text-white text-xs font-medium px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 cursor-pointer"
+                                        className="bg-white/10 hover:bg-white/20 text-white text-xs font-medium px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-sm"
                                     >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                         </svg>
-                                        Download JSON File
+                                        Download portfolio.json File
                                     </button>
 
                                     <button
                                         onClick={handleCopyJSON}
                                         className="bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-purple-200 text-xs font-medium px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 cursor-pointer"
                                     >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                                         </svg>
                                         Copy JSON to Clipboard
@@ -1701,7 +1764,7 @@ export default function AdminPage() {
                                         onClick={() => importFileInputRef.current?.click()}
                                         className="bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-200 text-xs font-medium px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 cursor-pointer"
                                     >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l4-4m0 0l4 4m-4-4v12" />
                                         </svg>
                                         Upload JSON File
@@ -2078,12 +2141,12 @@ export default function AdminPage() {
             {/* MODAL: GITHUB AUTO-PUBLISH (METHOD 2) */}
             <AnimatePresence>
                 {isPublishModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 15 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 15 }}
-                            className="bg-[#15151c] border border-emerald-500/30 rounded-3xl p-6 md:p-8 w-full max-w-xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] relative overflow-hidden"
+                            className="bg-[#15151c] border border-emerald-500/30 rounded-3xl p-6 md:p-8 w-full max-w-xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] relative overflow-hidden my-8"
                         >
                             {/* Ambient Glow */}
                             <div className="absolute -top-24 -right-24 w-60 h-60 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
@@ -2097,10 +2160,36 @@ export default function AdminPage() {
                                         Publish to Live Portfolio
                                     </h3>
                                     <p className="text-xs text-gray-400">
-                                        Auto-commit to GitHub & trigger live deployment
+                                        গিটহাবে অটো-কমিট করে লাইভ ওয়েবসাইট পার্মানেন্টলি আপডেট করুন
                                     </p>
                                 </div>
                             </div>
+
+                            {/* Connection Test Status */}
+                            {testConnectionStatus === "testing" && (
+                                <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl text-blue-300 text-xs flex items-center gap-2">
+                                    <div className="w-3.5 h-3.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin shrink-0" />
+                                    <span>Testing connection to GitHub...</span>
+                                </div>
+                            )}
+
+                            {testConnectionStatus === "success" && (
+                                <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-300 text-xs flex items-center gap-2">
+                                    <svg className="w-4 h-4 shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <span>{testConnectionMessage}</span>
+                                </div>
+                            )}
+
+                            {testConnectionStatus === "error" && (
+                                <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-xs flex items-center gap-2">
+                                    <svg className="w-4 h-4 shrink-0 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>{testConnectionMessage}</span>
+                                </div>
+                            )}
 
                             {/* Status Notifications */}
                             {publishStatus === "loading" && (
@@ -2137,7 +2226,7 @@ export default function AdminPage() {
                                                 rel="noopener noreferrer"
                                                 className="inline-flex items-center gap-1 bg-emerald-600/30 hover:bg-emerald-600/40 border border-emerald-500/40 text-emerald-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
                                             >
-                                                View GitHub Deployment Progress →
+                                                View GitHub Actions Progress →
                                             </a>
                                         )}
                                         <a
@@ -2163,7 +2252,7 @@ export default function AdminPage() {
                                     </svg>
                                     <div>
                                         <p className="font-semibold">{publishMessage}</p>
-                                        <p className="text-gray-400 mt-1">Make sure your GitHub Token has <code className="text-red-300 font-mono">repo</code> permissions.</p>
+                                        <p className="text-gray-400 mt-1">Make sure your GitHub Token has <code className="text-red-300 font-mono">repo</code> permissions enabled.</p>
                                     </div>
                                 </motion.div>
                             )}
@@ -2180,19 +2269,28 @@ export default function AdminPage() {
                                             rel="noopener noreferrer"
                                             className="text-[11px] text-purple-400 hover:text-purple-300 underline"
                                         >
-                                            Generate Token on GitHub ↗
+                                            1-Click Token তৈরি করুন ↗
                                         </a>
                                     </div>
-                                    <input
-                                        type="password"
-                                        value={publishToken}
-                                        onChange={(e) => setPublishToken(e.target.value)}
-                                        placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-emerald-500"
-                                        required
-                                    />
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="password"
+                                            value={publishToken}
+                                            onChange={(e) => setPublishToken(e.target.value)}
+                                            placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                                            className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-emerald-500"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleTestToken}
+                                            className="bg-white/10 hover:bg-white/20 text-white text-xs px-3 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap"
+                                        >
+                                            Test
+                                        </button>
+                                    </div>
                                     <p className="text-[11px] text-gray-500 mt-1">
-                                        Your token is stored safely only inside your local browser.
+                                        টোকেনটি শুধুমাত্র আপনার ব্রাউজারে সুরক্ষিত থাকবে।
                                     </p>
                                 </div>
 
