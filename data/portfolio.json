@@ -9,22 +9,37 @@
   },
   "about": {
     "bio": [
-      "Enthusiastic CSE student with practical experience in event coordination, documentation, and content creation through active roles in campus clubs and organizations.",
-      "Skilled in teamwork, communication, and various digital tools. Passionate about learning, supporting others, and contributing to both technical and creative projects."
+      "Dynamic individual with hands-on experience in Android App development, Web Development and talent for navigating\nchallenges. Brings strong problem-solving skills and proactive approach to new tasks.",
+      " Known for adaptability, creativity and results-oriented mindset. Committed to making meaningful contributions and advancing organizational goals."
     ],
     "skills": [
-      "Figma",
-      "Canva",
-      "Adobe Photoshop",
-      "Adobe Illustrator",
       "Flutter",
       "Dart",
       "UI/UX Design",
       "Prototyping",
       "Wireframing",
-      "Material Design",
       "Firebase",
-      "App Development"
+      "App Development",
+      "State  management  ( Bloc)",
+      "Android  Studio",
+      "HTML",
+      "CSS",
+      "Tailwind  CSS",
+      "React",
+      "PHP",
+      "Python",
+      "C+ +",
+      "Java",
+      "MySQL",
+      "Git",
+      "GitHub",
+      "Figma",
+      "OpenStreetMap  ( OSM)",
+      "AutoCAD",
+      "Microsoft  word",
+      "Excel",
+      "PowerPoint",
+      "Canva"
     ],
     "languages": [
       "Bangla (Native)",
@@ -56,6 +71,13 @@
   ],
   "experience": [
     {
+      "id": "exp-3",
+      "role": "Vice President",
+      "organization": "CSE CLUB PSTU",
+      "year": "Jan 2026 - Present",
+      "description": "• Mentored junior leaders, promoting professional development and succession planning within the organization.\n• Led cross-functional teams to drive strategic initiatives aligned with corporate objectives.\n• Provided strong leadership to enhance team productivity and morale."
+    },
+    {
       "id": "exp-1",
       "role": "Co-Founder",
       "organization": "PSTU ESPORTS CLUB",
@@ -70,18 +92,39 @@
       "description": "• Led strategic initiatives to drive organizational growth and operational efficiency.\n• Oversaw cross-functional teams to ensure alignment with strategic goals and objectives.\n• Developed strong partnerships with cross-functional teams for improved collaboration and efficiency."
     },
     {
-      "id": "exp-3",
-      "role": "Vice President",
-      "organization": "CSE CLUB PSTU",
-      "year": "Jan 2026 - Present",
-      "description": "• Mentored junior leaders, promoting professional development and succession planning within the organization.\n• Led cross-functional teams to drive strategic initiatives aligned with corporate objectives.\n• Provided strong leadership to enhance team productivity and morale."
-    },
-    {
       "id": "exp-4",
       "role": "Campus Co-ordinator",
       "organization": "YOUTH UPSKILL NETWORK - YUNET",
       "year": "2025 - Present",
       "description": "Working with the development team and representing YUNet as a campus ambassador in PSTU.\nManaging events with the organizer team."
+    },
+    {
+      "role": "Assistant General Secretary",
+      "organization": "CSE Club PSTU",
+      "year": "Dec 2024 - Dec 2025",
+      "description": "• Assisted in planning and organizing cultural and sports events for CSE students.\n• Coordinated logistics, registrations, and communications for events.\n• Helped maintain documentation and reports of wing activities.\n",
+      "id": "exp-1786464758414-vst2"
+    },
+    {
+      "role": "Content Creator",
+      "organization": "PSTU PHOTOGRAPHY CLUB",
+      "year": "Jan 2023 - Dec 2024",
+      "description": "• Created and managed visual and written content for social media and events.\n• Collaborated with photographers to publish engaging content.\n• Handled social media posts, captions, and visual storytelling.",
+      "id": "exp-1786464786934-mlyk"
+    },
+    {
+      "role": "Documentation Team Co-ordinator",
+      "organization": "PSTU Youthmappers",
+      "year": "Jan 2022 - Dec 2023",
+      "description": "• Led the documentation of mapping activities, events, and trainings.\n• Supported visibility and outreach by promoting club activities.\n• Created blog posts, newsletters, and summary reports.",
+      "id": "exp-1786464815166-85is"
+    },
+    {
+      "role": "Organizing volunteer",
+      "organization": "Bangladesh Gaming and Esports Summit 2025 Organized byby YUNet",
+      "year": "Dec 2025 - Dec 2025 Dhaka",
+      "description": "• Assisted in organizing gaming tournaments and events, ensuring smooth operations throughout.\n• Collaborated with team members to set up event logistics and technology requirements.\n• Supported marketing initiatives by promoting events through social media platforms.\n• Engaged with participants and attendees to provide information and enhance their experience.\n• Assisted with special events and programs.",
+      "id": "exp-1786464880661-yzib"
     }
   ],
   "projects": [
@@ -164,5 +207,6 @@
   },
   "footer": {
     "copyright": "© Prince's Portfolio. All Rights Reserved."
-  }
+  },
+  "updatedAt": 1786464932597
 }
