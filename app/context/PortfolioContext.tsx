@@ -62,7 +62,9 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     const [isLoaded, setIsLoaded] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-        // First load from localStorage if available for immediate responsiveness
+    // Load data from LocalStorage and live portfolio.json on mount
+    useEffect(() => {
+        // First load from localStorage if available for immediate real-time responsiveness
         try {
             const savedData = localStorage.getItem(DATA_STORAGE_KEY);
             if (savedData) {
@@ -106,7 +108,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
 
         setIsLoaded(true);
 
-        // Listen for storage events (multi-tab sync)
+        // Listen for storage events (real-time multi-tab and live sync)
         const handleStorageChange = (e: StorageEvent) => {
             if (e.key === DATA_STORAGE_KEY && e.newValue) {
                 try {

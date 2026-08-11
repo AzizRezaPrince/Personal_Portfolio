@@ -17,6 +17,7 @@ import {
     saveStoredGitHubRepo,
     publishPortfolioToGitHub,
 } from "@/app/utils/githubSync";
+import { getBasePath } from "@/app/utils/basePath";
 
 type TabType =
     | "hero"
@@ -75,6 +76,18 @@ export default function AdminPage() {
         setTimeout(() => {
             setToastMessage(null);
         }, 3000);
+    };
+
+    const formatImageUrl = (img: string) => {
+        if (!img) return "";
+        if (img.startsWith("data:") || img.startsWith("http://") || img.startsWith("https://")) {
+            return img;
+        }
+        const basePath = getBasePath();
+        if (img.startsWith("/")) {
+            return `${basePath}${img}`;
+        }
+        return `${basePath}/${img}`;
     };
 
     // GitHub Auto-Publish State
@@ -1307,7 +1320,7 @@ export default function AdminPage() {
                                         <div className="relative h-44 w-full bg-black/40 overflow-hidden">
                                             {proj.image ? (
                                                 <img
-                                                    src={proj.image}
+                                                    src={formatImageUrl(proj.image)}
                                                     alt={proj.title}
                                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                                 />
@@ -1971,7 +1984,7 @@ export default function AdminPage() {
                                     {projForm.image && (
                                         <div className="relative h-28 w-full rounded-xl overflow-hidden bg-black/40 border border-white/10">
                                             <img
-                                                src={projForm.image}
+                                                src={formatImageUrl(projForm.image)}
                                                 alt="Preview"
                                                 className="w-full h-full object-cover"
                                             />
