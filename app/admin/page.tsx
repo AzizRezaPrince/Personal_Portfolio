@@ -9,6 +9,7 @@ import {
     ExperienceItem,
     ProjectItem,
     ContactItem,
+    AwardCertificateItem,
 } from "@/app/data/portfolioData";
 import {
     getStoredGitHubToken,
@@ -27,6 +28,7 @@ type TabType =
     | "education"
     | "experience"
     | "projects"
+    | "certificates"
     | "contact"
     | "settings";
 
@@ -55,6 +57,10 @@ export default function AdminPage() {
         updateProject,
         deleteProject,
         reorderProjects,
+        addCertificate,
+        updateCertificate,
+        deleteCertificate,
+        reorderCertificates,
         updateContact,
         updateFooter,
         resetToDefaults,
@@ -152,6 +158,30 @@ export default function AdminPage() {
         featured: true,
     });
     const projectFileInputRef = useRef<HTMLInputElement>(null);
+
+    // Certificate modal / form
+    const [editingCert, setEditingCert] = useState<AwardCertificateItem | null>(null);
+    const [isCertModalOpen, setIsCertModalOpen] = useState(false);
+    const [certForm, setCertForm] = useState<{
+        title: string;
+        issuer: string;
+        date: string;
+        description: string;
+        category: "Award" | "Certificate" | "Honor" | "Badge";
+        image: string;
+        credentialUrl: string;
+        featured: boolean;
+    }>({
+        title: "",
+        issuer: "",
+        date: "",
+        description: "",
+        category: "Certificate",
+        image: "",
+        credentialUrl: "",
+        featured: true,
+    });
+    const certFileInputRef = useRef<HTMLInputElement>(null);
 
     // Contact form state
     const [contactTitle, setContactTitle] = useState(data.contact.title);
@@ -565,6 +595,132 @@ export default function AdminPage() {
         showToast("Projects reordered!");
     };
 
+    // Certificate / Award Handlers
+    const openAddCertModal = () => {
+        setEditingCert(null);
+        setCertForm({
+            title: "",
+            issuer: "",
+            date: "",
+            description: "",
+            category: "Certificate",
+            image: "",
+            credentialUrl: "",
+            featured: true,
+        });
+        setIsCertModalOpen(true);
+    };
+
+    const openEditCertModal = (cert: AwardCertificateItem) => {
+        setEditingCert(cert);
+        setCertForm({
+            title: cert.title,
+            issuer: cert.issuer,
+            date: cert.date,
+            description: cert.description || "",
+            category: cert.category,
+            image: cert.image || "",
+            credentialUrl: cert.credentialUrl || "",
+            featured: cert.featured ?? true,
+        });
+        setIsCertModalOpen(true);
+    };
+
+    const handleCertImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const rawUrl = event.target?.result as string;
+            if (!rawUrl) return;
+
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement("canvas");
+                const MAX_WIDTH = 1200;
+                const MAX_HEIGHT = 800;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height = Math.round((height * MAX_WIDTH) / width);
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width = Math.round((width * MAX_HEIGHT) / height);
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext("2d");
+                if (ctx) {
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const optimizedDataUrl =
+                        canvas.toDataURL("image/webp", 0.85) ||
+                        canvas.toDataURL("image/jpeg", 0.85);
+                    setCertForm((prev) => ({ ...prev, image: optimizedDataUrl }));
+                    showToast("Certificate image optimized & loaded!");
+                } else {
+                    setCertForm((prev) => ({ ...prev, image: rawUrl }));
+                    showToast("Certificate image loaded!");
+                }
+            };
+            img.src = rawUrl;
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleSaveCert = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!certForm.title || !certForm.issuer) {
+            showToast("Please enter a Title and Issuer");
+            return;
+        }
+
+        const certPayload = {
+            title: certForm.title,
+            issuer: certForm.issuer,
+            date: certForm.date,
+            description: certForm.description,
+            category: certForm.category,
+            image: certForm.image,
+            credentialUrl: certForm.credentialUrl,
+            featured: certForm.featured,
+        };
+
+        if (editingCert) {
+            updateCertificate(editingCert.id, certPayload);
+            showToast("Certificate updated!");
+        } else {
+            addCertificate(certPayload);
+            showToast("New certificate added!");
+        }
+        setIsCertModalOpen(false);
+    };
+
+    const handleMoveCert = (index: number, direction: "up" | "down") => {
+        const currentCerts = data.certificates || [];
+        const newCerts = [...currentCerts];
+        const targetIndex = direction === "up" ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= newCerts.length) return;
+        const [moved] = newCerts.splice(index, 1);
+        newCerts.splice(targetIndex, 0, moved);
+        reorderCertificates(newCerts);
+        showToast("Certificates reordered!");
+    };
+
+    const handleDeleteCert = (id: string) => {
+        if (confirm("Are you sure you want to delete this award/certificate?")) {
+            deleteCertificate(id);
+            showToast("Certificate deleted!");
+        }
+    };
+
     // Contact & Footer Handlers
     const handleSaveContact = (e: React.FormEvent) => {
         e.preventDefault();
@@ -915,6 +1071,7 @@ export default function AdminPage() {
                         { id: "education", label: "Education", icon: "🎓", count: data.education.length },
                         { id: "experience", label: "Work Experience", icon: "💼", count: data.experience.length },
                         { id: "projects", label: "Projects", icon: "🚀", count: data.projects.length },
+                        { id: "certificates", label: "Awards & Certs", icon: "🏆", count: (data.certificates || []).length },
                         { id: "contact", label: "Contact & Footer", icon: "📬" },
                         { id: "settings", label: "Settings & Backup", icon: "⚙️" },
                     ].map((tab) => (
@@ -1487,7 +1644,124 @@ export default function AdminPage() {
                         </div>
                     )}
 
-                    {/* TAB 7: CONTACT & FOOTER */}
+                    {/* TAB 7: AWARDS & CERTIFICATES */}
+                    {activeTab === "certificates" && (
+                        <div>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4 mb-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-white">Awards & Certificates</h2>
+                                    <p className="text-sm text-gray-400 mt-1">
+                                        Upload and manage your credentials, honors, badges, and certificates.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={openAddCertModal}
+                                    className="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-xl transition-all shadow-lg shadow-purple-600/30 flex items-center justify-center gap-2 cursor-pointer shrink-0"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    Add Award / Certificate
+                                </button>
+                            </div>
+
+                            {(!data.certificates || data.certificates.length === 0) ? (
+                                <div className="text-center py-16 bg-white/5 border border-dashed border-white/10 rounded-2xl">
+                                    <p className="text-gray-400 text-sm mb-4">No awards or certificates added yet.</p>
+                                    <button
+                                        onClick={openAddCertModal}
+                                        className="px-4 py-2 bg-purple-600 text-white text-xs font-semibold rounded-xl hover:bg-purple-500 transition-all"
+                                    >
+                                        + Add Your First Certificate
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 gap-4">
+                                    {data.certificates.map((cert, index) => (
+                                        <div
+                                            key={cert.id}
+                                            className="bg-white/5 border border-white/10 hover:border-white/20 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all"
+                                        >
+                                            <div className="flex items-center gap-4 flex-1 min-w-0">
+                                                {/* Image Thumbnail */}
+                                                <div className="w-16 h-16 rounded-xl bg-black/40 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center text-purple-400">
+                                                    {cert.image ? (
+                                                        <img
+                                                            src={formatImageUrl(cert.image)}
+                                                            alt={cert.title}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                                                        </svg>
+                                                    )}
+                                                </div>
+
+                                                <div className="min-w-0 flex-1 space-y-1">
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                                                            {cert.category}
+                                                        </span>
+                                                        {cert.featured && (
+                                                            <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                                                Featured
+                                                            </span>
+                                                        )}
+                                                        {cert.date && (
+                                                            <span className="text-xs text-gray-400">
+                                                                • {cert.date}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <h3 className="text-base font-semibold text-white truncate">
+                                                        {cert.title}
+                                                    </h3>
+                                                    <p className="text-xs text-purple-400 font-medium">
+                                                        Issued by {cert.issuer}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* Action Buttons */}
+                                            <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                                                <button
+                                                    onClick={() => handleMoveCert(index, "up")}
+                                                    disabled={index === 0}
+                                                    title="Move Up"
+                                                    className="p-2 bg-white/5 hover:bg-white/10 disabled:opacity-30 rounded-lg text-gray-300 transition-all cursor-pointer"
+                                                >
+                                                    ↑
+                                                </button>
+                                                <button
+                                                    onClick={() => handleMoveCert(index, "down")}
+                                                    disabled={index === (data.certificates?.length || 1) - 1}
+                                                    title="Move Down"
+                                                    className="p-2 bg-white/5 hover:bg-white/10 disabled:opacity-30 rounded-lg text-gray-300 transition-all cursor-pointer"
+                                                >
+                                                    ↓
+                                                </button>
+                                                <button
+                                                    onClick={() => openEditCertModal(cert)}
+                                                    className="px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-xs font-semibold rounded-lg text-purple-200 transition-all cursor-pointer"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteCert(cert.id)}
+                                                    className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-xs font-semibold rounded-lg text-red-300 transition-all cursor-pointer"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* TAB 8: CONTACT & FOOTER */}
                     {activeTab === "contact" && (
                         <div>
                             <div className="border-b border-white/10 pb-4 mb-6">
@@ -2130,6 +2404,204 @@ export default function AdminPage() {
                                         className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-medium text-white transition-all cursor-pointer"
                                     >
                                         {editingProj ? "Save Changes" : "Create Project"}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* MODAL: ADD / EDIT CERTIFICATE & AWARD */}
+            <AnimatePresence>
+                {isCertModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                            className="bg-[#18181b] border border-white/10 rounded-3xl p-6 md:p-8 w-full max-w-xl shadow-2xl my-8 relative"
+                        >
+                            <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
+                                <h3 className="text-xl font-bold text-white">
+                                    {editingCert ? "Edit Award / Certificate" : "Add Award / Certificate"}
+                                </h3>
+                                <button
+                                    onClick={() => setIsCertModalOpen(false)}
+                                    className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleSaveCert} className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs text-gray-400 mb-1">
+                                            Category <span className="text-purple-400">*</span>
+                                        </label>
+                                        <select
+                                            value={certForm.category}
+                                            onChange={(e) =>
+                                                setCertForm({
+                                                    ...certForm,
+                                                    category: e.target.value as "Award" | "Certificate" | "Honor" | "Badge",
+                                                })
+                                            }
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500"
+                                        >
+                                            <option value="Certificate" className="bg-[#18181b] text-white">Certificate</option>
+                                            <option value="Award" className="bg-[#18181b] text-white">Award</option>
+                                            <option value="Honor" className="bg-[#18181b] text-white">Honor</option>
+                                            <option value="Badge" className="bg-[#18181b] text-white">Badge</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-400 mb-1">
+                                            Date / Year <span className="text-purple-400">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={certForm.date}
+                                            onChange={(e) =>
+                                                setCertForm({ ...certForm, date: e.target.value })
+                                            }
+                                            placeholder="e.g. Jan 2026 or 2025"
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs text-gray-400 mb-1">
+                                        Title <span className="text-purple-400">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={certForm.title}
+                                        onChange={(e) =>
+                                            setCertForm({ ...certForm, title: e.target.value })
+                                        }
+                                        placeholder="e.g. Android & Flutter Development Certificate"
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs text-gray-400 mb-1">
+                                        Issuer / Organization <span className="text-purple-400">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={certForm.issuer}
+                                        onChange={(e) =>
+                                            setCertForm({ ...certForm, issuer: e.target.value })
+                                        }
+                                        placeholder="e.g. CSE Club PSTU or Udemy"
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs text-gray-400 mb-1">
+                                        Description (Optional)
+                                    </label>
+                                    <textarea
+                                        rows={3}
+                                        value={certForm.description}
+                                        onChange={(e) =>
+                                            setCertForm({ ...certForm, description: e.target.value })
+                                        }
+                                        placeholder="Brief summary of the credential, skills verified, or achievement details..."
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500"
+                                    />
+                                </div>
+
+                                {/* File Upload / Image URL */}
+                                <div className="space-y-2">
+                                    <label className="block text-xs text-gray-400">
+                                        Certificate Image / Badge (Upload Image File or Enter URL / Path)
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={certForm.image}
+                                            onChange={(e) =>
+                                                setCertForm({ ...certForm, image: e.target.value })
+                                            }
+                                            placeholder="/certificates/cert1.png or https://..."
+                                            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => certFileInputRef.current?.click()}
+                                            className="bg-white/10 hover:bg-white/20 text-white text-xs px-3 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap"
+                                        >
+                                            Upload File
+                                        </button>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            ref={certFileInputRef}
+                                            onChange={handleCertImageUpload}
+                                            className="hidden"
+                                        />
+                                    </div>
+                                    {certForm.image && (
+                                        <div className="relative h-32 w-full rounded-xl overflow-hidden bg-black/40 border border-white/10">
+                                            <img
+                                                src={formatImageUrl(certForm.image)}
+                                                alt="Preview"
+                                                className="w-full h-full object-contain"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs text-gray-400 mb-1">
+                                        Credential Verification URL (Optional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={certForm.credentialUrl}
+                                        onChange={(e) =>
+                                            setCertForm({ ...certForm, credentialUrl: e.target.value })
+                                        }
+                                        placeholder="https://credly.com/badges/... or verification link"
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
+                                    />
+                                </div>
+
+                                <div className="flex items-center justify-between pt-2">
+                                    <label className="inline-flex items-center gap-2 text-xs text-gray-300 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={certForm.featured}
+                                            onChange={(e) =>
+                                                setCertForm({ ...certForm, featured: e.target.checked })
+                                            }
+                                            className="w-4 h-4 rounded border-white/20 text-purple-600 focus:ring-purple-500 bg-white/5"
+                                        />
+                                        <span>Spotlight as Featured Credential</span>
+                                    </label>
+                                </div>
+
+                                <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsCertModalOpen(false)}
+                                        className="px-4 py-2 rounded-xl text-xs text-gray-400 hover:text-white transition-colors cursor-pointer"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-medium text-white transition-all cursor-pointer"
+                                    >
+                                        {editingCert ? "Save Changes" : "Add Certificate"}
                                     </button>
                                 </div>
                             </form>
