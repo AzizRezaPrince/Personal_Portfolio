@@ -83,6 +83,10 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
             if (savedData) {
                 localDataParsed = JSON.parse(savedData);
                 if (localDataParsed && localDataParsed.hero) {
+                    // Fall back to default certificates if localStorage has empty array or undefined
+                    if (!localDataParsed.certificates || localDataParsed.certificates.length === 0) {
+                        localDataParsed.certificates = defaultPortfolioData.certificates || [];
+                    }
                     localTimestamp = localDataParsed.updatedAt || 1;
                     setData(localDataParsed);
                     setLastSavedAt(localTimestamp);
@@ -119,19 +123,25 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
                 if (fetchedData && fetchedData.hero) {
                     const remoteTimestamp = fetchedData.updatedAt || 0;
 
-                    // Intelligently preserve certificates from local or remote source
-                    const mergedCertificates =
+                    // Intelligently preserve certificates from remote or local source
+                    const finalCertificates =
                         fetchedData.certificates && fetchedData.certificates.length > 0
                             ? fetchedData.certificates
-                            : localDataParsed?.certificates || fetchedData.certificates || [];
+                            : localDataParsed?.certificates && localDataParsed.certificates.length > 0
+                            ? localDataParsed.certificates
+                            : defaultPortfolioData.certificates || [];
 
                     const dataToSet: PortfolioData = {
                         ...fetchedData,
-                        certificates: mergedCertificates,
+                        certificates: finalCertificates,
                     };
 
-                    // Only update from remote if remote is newer or local is empty
-                    if (!localDataParsed || remoteTimestamp >= localTimestamp) {
+                    // Always update state if remote is newer, or if local is missing certificates
+                    if (
+                        !localDataParsed ||
+                        remoteTimestamp >= localTimestamp ||
+                        (fetchedData.certificates && fetchedData.certificates.length > 0 && (!localDataParsed.certificates || localDataParsed.certificates.length === 0))
+                    ) {
                         setData(dataToSet);
                         setLastSavedAt(remoteTimestamp || Date.now());
                         try {
@@ -139,22 +149,12 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
                         } catch {
                             // ignore storage errors
                         }
-                    } else if (localDataParsed && localTimestamp > remoteTimestamp) {
-                        // Local has newer edits; sync them to disk API if running locally
+                    } else {
                         const localWithCerts: PortfolioData = {
                             ...localDataParsed,
-                            certificates: localDataParsed.certificates || mergedCertificates,
+                            certificates: finalCertificates,
                         };
                         setData(localWithCerts);
-                        try {
-                            fetch("/api/portfolio", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify(localWithCerts),
-                            }).catch(() => {});
-                        } catch {
-                            // ignore
-                        }
                     }
                 }
             } catch {
