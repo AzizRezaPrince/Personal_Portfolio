@@ -119,22 +119,38 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
                 if (fetchedData && fetchedData.hero) {
                     const remoteTimestamp = fetchedData.updatedAt || 0;
 
-                    // Only update from remote if remote is strictly newer than local edits
-                    if (!localDataParsed || remoteTimestamp > localTimestamp) {
-                        setData(fetchedData);
+                    // Intelligently preserve certificates from local or remote source
+                    const mergedCertificates =
+                        fetchedData.certificates && fetchedData.certificates.length > 0
+                            ? fetchedData.certificates
+                            : localDataParsed?.certificates || fetchedData.certificates || [];
+
+                    const dataToSet: PortfolioData = {
+                        ...fetchedData,
+                        certificates: mergedCertificates,
+                    };
+
+                    // Only update from remote if remote is newer or local is empty
+                    if (!localDataParsed || remoteTimestamp >= localTimestamp) {
+                        setData(dataToSet);
                         setLastSavedAt(remoteTimestamp || Date.now());
                         try {
-                            localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(fetchedData));
+                            localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(dataToSet));
                         } catch {
                             // ignore storage errors
                         }
                     } else if (localDataParsed && localTimestamp > remoteTimestamp) {
                         // Local has newer edits; sync them to disk API if running locally
+                        const localWithCerts: PortfolioData = {
+                            ...localDataParsed,
+                            certificates: localDataParsed.certificates || mergedCertificates,
+                        };
+                        setData(localWithCerts);
                         try {
                             fetch("/api/portfolio", {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify(localDataParsed),
+                                body: JSON.stringify(localWithCerts),
                             }).catch(() => {});
                         } catch {
                             // ignore

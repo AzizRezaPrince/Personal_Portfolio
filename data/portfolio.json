@@ -242,5 +242,25 @@
   "footer": {
     "copyright": "© Prince's Portfolio. All Rights Reserved."
   },
-  "updatedAt": 1787678089089
+  "certificates": [
+    {
+      "id": "cert-1",
+      "title": "Basics of Management",
+      "issuer": "UniAthena",
+      "date": "Aug 2026",
+      "description": "Certification in fundamental management principles, organizational strategy, and leadership.",
+      "category": "Certificate",
+      "featured": true
+    },
+    {
+      "id": "cert-2",
+      "title": "Basics of Python",
+      "issuer": "UniAthena",
+      "date": "Aug 2026",
+      "description": "Certification in Python programming language fundamentals, data structures, and core syntax.",
+      "category": "Certificate",
+      "featured": true
+    }
+  ],
+  "updatedAt": 1787680000000
 }
