@@ -227,13 +227,20 @@
         "value": "arprincedabbu@gmail.com",
         "type": "email",
         "url": "mailto:arprincedabbu@gmail.com"
+      },
+      {
+        "label": "LinkdIn",
+        "value": "https://www.linkedin.com/in/princeazizreza/",
+        "type": "link",
+        "url": "",
+        "id": "contact-1787677306231"
       }
     ]
   },
   "footer": {
     "copyright": "© Prince's Portfolio. All Rights Reserved."
   },
-  "updatedAt": 1787677187536,
+  "updatedAt": 1787677316520,
   "certificates": [
     {
       "title": "Basics of Machine Learning Algorithms",
