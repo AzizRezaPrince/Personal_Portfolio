@@ -44,6 +44,18 @@ export interface ContactItem {
     url?: string;
 }
 
+export interface AwardCertificateItem {
+    id: string;
+    title: string;
+    issuer: string;
+    date: string;
+    description: string;
+    category: "Award" | "Certificate" | "Honor" | "Badge";
+    image?: string;
+    credentialUrl?: string;
+    featured?: boolean;
+}
+
 export interface PortfolioData {
     hero: HeroData;
     about: {
@@ -54,6 +66,7 @@ export interface PortfolioData {
     education: EducationItem[];
     experience: ExperienceItem[];
     projects: ProjectItem[];
+    certificates?: AwardCertificateItem[];
     contact: {
         title: string;
         subtitle: string;

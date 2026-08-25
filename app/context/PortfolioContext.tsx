@@ -10,6 +10,7 @@ import {
     ExperienceItem,
     ProjectItem,
     ContactItem,
+    AwardCertificateItem,
 } from "@/app/data/portfolioData";
 
 interface AdminCredentials {
@@ -50,6 +51,10 @@ interface PortfolioContextType {
     updateProject: (id: string, item: Partial<ProjectItem>) => void;
     deleteProject: (id: string) => void;
     reorderProjects: (items: ProjectItem[]) => void;
+    addCertificate: (item: Omit<AwardCertificateItem, "id">) => void;
+    updateCertificate: (id: string, item: Partial<AwardCertificateItem>) => void;
+    deleteCertificate: (id: string) => void;
+    reorderCertificates: (items: AwardCertificateItem[]) => void;
     updateContact: (contact: PortfolioData["contact"]) => void;
     updateFooter: (footer: PortfolioData["footer"]) => void;
     resetToDefaults: () => void;
@@ -381,6 +386,36 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
         persistData({ ...data, projects: items });
     };
 
+    // Certificate updates
+    const addCertificate = (item: Omit<AwardCertificateItem, "id">) => {
+        const newItem: AwardCertificateItem = {
+            ...item,
+            id: `cert-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        };
+        const currentCerts = data.certificates || [];
+        persistData({ ...data, certificates: [...currentCerts, newItem] });
+    };
+
+    const updateCertificate = (id: string, updated: Partial<AwardCertificateItem>) => {
+        const currentCerts = data.certificates || [];
+        const updatedList = currentCerts.map((cert) =>
+            cert.id === id ? { ...cert, ...updated } : cert
+        );
+        persistData({ ...data, certificates: updatedList });
+    };
+
+    const deleteCertificate = (id: string) => {
+        const currentCerts = data.certificates || [];
+        persistData({
+            ...data,
+            certificates: currentCerts.filter((cert) => cert.id !== id),
+        });
+    };
+
+    const reorderCertificates = (items: AwardCertificateItem[]) => {
+        persistData({ ...data, certificates: items });
+    };
+
     // Contact & Footer
     const updateContact = (contact: PortfolioData["contact"]) => {
         persistData({ ...data, contact });
@@ -441,6 +476,10 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
                 updateProject,
                 deleteProject,
                 reorderProjects,
+                addCertificate,
+                updateCertificate,
+                deleteCertificate,
+                reorderCertificates,
                 updateContact,
                 updateFooter,
                 resetToDefaults,
