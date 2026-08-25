@@ -210,6 +210,52 @@
       "featured": false
     }
   ],
+  "certificates": [
+    {
+      "id": "cert-1",
+      "title": "Vice President Leadership Award",
+      "issuer": "CSE Club PSTU",
+      "date": "Jan 2026",
+      "category": "Award",
+      "description": "Awarded for outstanding leadership, technical mentoring, and organizing university hackathons and events.",
+      "image": "",
+      "credentialUrl": "https://github.com/AzizRezaPrince",
+      "featured": true
+    },
+    {
+      "id": "cert-2",
+      "title": "Esports Club Co-Founder Recognition",
+      "issuer": "PSTU Esports Club",
+      "date": "Jun 2025",
+      "category": "Honor",
+      "description": "Honored as Co-Founder for establishing the university esports club, governance structure, and tournament operations.",
+      "image": "",
+      "credentialUrl": "",
+      "featured": true
+    },
+    {
+      "id": "cert-3",
+      "title": "YouthMappers Chapter Leadership & Mapping Cert",
+      "issuer": "PSTU YouthMappers / USAID",
+      "date": "Jan 2025",
+      "category": "Certificate",
+      "description": "Certified for leading humanitarian GIS mapping, spatial documentation, and community training workshops.",
+      "image": "",
+      "credentialUrl": "",
+      "featured": true
+    },
+    {
+      "id": "cert-4",
+      "title": "Android & Flutter Development Certification",
+      "issuer": "Mobile Dev Academy",
+      "date": "2024",
+      "category": "Certificate",
+      "description": "Comprehensive certification covering Flutter, Dart, BLoC State Management, REST APIs, and Firebase integration.",
+      "image": "",
+      "credentialUrl": "",
+      "featured": true
+    }
+  ],
   "contact": {
     "title": "Get In Touch",
     "subtitle": "Feel free to reach out for collaborations, questions, or just to say hello.",

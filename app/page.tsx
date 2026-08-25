@@ -5,6 +5,7 @@ import ScrollyCanvas from "@/app/components/ScrollyCanvas";
 import Projects from "@/app/components/Projects";
 import About from "./components/About";
 import Experience from "./components/Experience";
+import Certificates from "./components/Certificates";
 import Contact from "./components/Contact";
 import { usePortfolioData } from "./context/PortfolioContext";
 
@@ -21,6 +22,7 @@ export default function Home() {
 
       <About />
       <Experience />
+      <Certificates />
 
       {/* 
         Projects section appears after the scroll sequence.
