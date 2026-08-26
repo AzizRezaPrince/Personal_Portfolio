@@ -236,6 +236,20 @@
         "value": "arprincedabbu@gmail.com",
         "type": "email",
         "url": "mailto:arprincedabbu@gmail.com"
+      },
+      {
+        "label": "LinkedIn ",
+        "value": "https://www.linkedin.com/in/princeazizreza",
+        "type": "link",
+        "url": "",
+        "id": "contact-1787702489482"
+      },
+      {
+        "label": "Github",
+        "value": "https://github.com/AzizRezaPrince",
+        "type": "link",
+        "url": "",
+        "id": "contact-1787702514106"
       }
     ]
   },
@@ -266,5 +280,5 @@
       "credentialUrl": ""
     }
   ],
-  "updatedAt": 1787680452995
+  "updatedAt": 1787702518116
 }
